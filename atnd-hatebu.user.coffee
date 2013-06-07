@@ -6,7 +6,7 @@
 // @namespace      http://yonchu.hatenablog.com/
 // @description    Show Hatena Bookmarks of articles in ATND
 // @license        MIT License (http://opensource.org/licenses/MIT)
-// @version        1.0.0
+// @version        1.0.1
 // @include        http://atnd.org/events/*
 // @released       2013-06-07
 // @updated        2013-06-07
@@ -14,6 +14,7 @@
 // ==/UserScript==
 // Version History:
 //   1.0.0 - 2013/06/07 Release
+//   1.0.1 - 2013/06/07 はてブ数取得を新APIに変更
 ###
 
 
@@ -38,7 +39,7 @@ addStyle = (css) ->
 
 # Create hatena bookmark img tag.
 createHatebu = do ->
-  hatebuUrl = 'http://b.hatena.ne.jp/entry/image/'
+  hatebuUrl = 'http://b.st-hatena.com/entry/image/'
   img_cache = document.createElement 'img'
   img_cache.className = 'hatebu'
   return (url) ->
