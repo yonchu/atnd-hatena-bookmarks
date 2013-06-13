@@ -7,20 +7,22 @@
 // @namespace      http://yonchu.hatenablog.com/
 // @description    Show Hatena Bookmarks of articles in ATND
 // @license        MIT License (http://opensource.org/licenses/MIT)
-// @version        1.0.1
+// @version        1.1.0
 // @include        http://atnd.org/events/*
 // @released       2013-06-07
-// @updated        2013-06-07
+// @updated        2013-06-15
 // @compatible     Greasemonkey
 // ==/UserScript==
 // Version History:
 //   1.0.0 - 2013/06/07 Release
 //   1.0.1 - 2013/06/07 はてブ数取得を新APIに変更
+//   1.1.0 - 2013/06/15 ランキング表示
 */
 
 
 (function() {
-  var addStyle, anchor, child, createHatebu, css, error, img, tagName, td, tr, trTags, url, _i, _j, _len, _len1, _ref;
+  var MAX_RANK, addStyle, articles, createHatebuImage, createHatebuText, createXhr, css, detectRedirectUrl, error, extend, findAnchorTag, httpRequest, remainCount, showHatebuImage, showHatebuText, showHatenaBoookmarks, showRanking, textContent,
+    __hasProp = {}.hasOwnProperty;
 
   try {
     if (top !== self) {
@@ -30,6 +32,8 @@
     error = _error;
     return;
   }
+
+  MAX_RANK = 10;
 
   addStyle = function(css) {
     var head, style;
@@ -43,10 +47,128 @@
     style.setAttribute('media', 'screen');
     style.appendChild(document.createTextNode(css));
     head = document.getElementsByTagName('head')[0];
-    return head.appendChild(style);
+    head.appendChild(style);
   };
 
-  createHatebu = (function() {
+  createXhr = (function() {
+    var activeXid, activeXids, ax, _i, _len;
+
+    activeXids = ['MSXML2.XMLHTTP.3.0', 'MSXML2.XMLHTTP', 'Microsoft.XMLHTTP'];
+    activeXid = null;
+    if (typeof XMLHttpRequest === "undefined" || XMLHttpRequest === null) {
+      for (_i = 0, _len = activeXids.length; _i < _len; _i++) {
+        ax = activeXids[_i];
+        try {
+          new ActiveXObject(ax);
+          activeXid = ax;
+          break;
+        } catch (_error) {}
+      }
+    }
+    return function() {
+      var xhr;
+
+      if (activeXid) {
+        xhr = new ActiveXObject(ax);
+      } else {
+        xhr = new XMLHttpRequest;
+      }
+      return xhr;
+    };
+  })();
+
+  httpRequest = function(url, callback) {
+    var xhr;
+
+    if (typeof GM_xmlhttpRequest !== "undefined" && GM_xmlhttpRequest !== null) {
+      GM_xmlhttpRequest({
+        method: 'GET',
+        url: url,
+        onload: function(response) {
+          callback(response.responseText);
+        }
+      });
+      return;
+    }
+    xhr = createXhr();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) {
+        return false;
+      }
+      if (xhr.status !== 200) {
+        alert("Error, status code: " + xhr.status);
+        return false;
+      }
+      callback(xhr.responseText);
+    };
+    xhr.open('GET', url, true);
+    xhr.send();
+  };
+
+  detectRedirectUrl = function(url, callback) {
+    if (!((typeof GM_xmlhttpRequest !== "undefined" && GM_xmlhttpRequest !== null) && url.match(/http:\/\/d.hatena.ne.jp/))) {
+      setTimeout(function() {
+        return callback(url);
+      }, 0);
+      return;
+    }
+    return GM_xmlhttpRequest({
+      method: 'GET',
+      url: url,
+      onload: function(response) {
+        var finalUrl, m;
+
+        finalUrl = url;
+        if (navigator.userAgent.match(/firefox/i)) {
+          if (response.finalUrl) {
+            finalUrl = response.finalUrl;
+          }
+        } else {
+          m = response.responseText.match(/<link rel="canonical" href="(.*)"\/>/);
+          if (m && m.length >= 2) {
+            finalUrl = m[1];
+          }
+        }
+        callback(finalUrl);
+      }
+    });
+  };
+
+  textContent = function(element, value) {
+    var content;
+
+    content = element.textContent;
+    if (value != null) {
+      if (content != null) {
+        return element.textContent = value;
+      } else {
+        return element.innerText = value;
+      }
+    } else {
+      if (content != null) {
+        return content;
+      }
+      return element.innerText;
+    }
+  };
+
+  extend = function(parent, child) {
+    var key, val;
+
+    child = child || {};
+    for (key in parent) {
+      if (!__hasProp.call(parent, key)) continue;
+      val = parent[key];
+      child[key] = val;
+    }
+    return child;
+  };
+
+  css = ".hatebu {\n  font-size: 90%;\n  color: #F00;\n  background-color: #FCC;\n  padding: 0px 3px 2px 3px !important;\n  font-weight: bold;\n  text-decoration: underline;\n  margin-left: 8px !important;\n}\n#hatebu-rank td{\n  border: none;\n  padding-bottom: 15px;\n}\n#hatebu-rank td span:nth-of-type(1){\n  margin-left: 2px !important;\n}\n#hatebu-rank td:first-child{\n  white-space: nowrap;\n  padding: 5px 15px 0px 0px;\n  font-size: 150%;\n  text-align: right;\n}\n#hatebu-rank tr:nth-child(1) td:first-child{\n  font-size: 250%;\n}\n#hatebu-rank tr:nth-child(2) td:first-child{\n  font-size: 200%;\n}\n#hatebu-rank tr:nth-child(3) td:first-child{\n  font-size: 200%;\n}\n#hatebu-rank tr:nth-child(1) td:nth-child(2){\n  font-size: 150%;\n}\n#hatebu-rank tr:nth-child(2) td:nth-child(2){\n  font-size: 120%;\n}\n#hatebu-rank tr:nth-child(3) td:nth-child(2){\n  font-size: 120%;\n}";
+
+  addStyle(css);
+
+  createHatebuImage = (function() {
     var hatebuUrl, img_cache;
 
     hatebuUrl = 'http://b.st-hatena.com/entry/image/';
@@ -61,38 +183,176 @@
     };
   })();
 
-  css = '.hatebu{padding-bottom: 2px !important; margin-left: 5px !important;}';
+  createHatebuText = (function() {
+    var span_cache;
 
-  addStyle(css);
+    span_cache = document.createElement('span');
+    span_cache.className = 'hatebu';
+    return function(count) {
+      var span;
 
-  trTags = document.querySelectorAll('#post-body table tr');
+      span = span_cache.cloneNode();
+      textContent(span, "" + count + " users");
+      return span;
+    };
+  })();
 
-  for (_i = 0, _len = trTags.length; _i < _len; _i++) {
-    tr = trTags[_i];
-    anchor = null;
-    _ref = tr.children;
-    for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-      td = _ref[_j];
-      child = td.firstChild;
-      if (!child) {
-        continue;
+  showHatebuImage = function(url, parent) {
+    var hatebu;
+
+    hatebu = createHatebuImage(url);
+    return parent.appendChild(hatebu);
+  };
+
+  remainCount = 0;
+
+  articles = [];
+
+  showHatebuText = function(parent, param) {
+    remainCount += 1;
+    return detectRedirectUrl(param.url, function(finalUrl) {
+      var reqUrl;
+
+      reqUrl = 'http://api.b.st-hatena.com/entry.count?url=' + encodeURIComponent(finalUrl);
+      return httpRequest(reqUrl, function(response) {
+        var article, elem, hatebu;
+
+        article = extend(param);
+        if (response) {
+          hatebu = parseInt(response, 10);
+          if (!isNaN(hatebu)) {
+            elem = createHatebuText(hatebu);
+            parent.appendChild(elem);
+            article.hatebuTag = elem.cloneNode(true);
+            article.hatebu = hatebu;
+            articles.push(article);
+          }
+        }
+        remainCount -= 1;
+        if (remainCount <= 0) {
+          return showRanking(articles);
+        }
+      });
+    });
+  };
+
+  showRanking = function(articles) {
+    var article, h2, nameTag, pos, rank, table, tbody, td, tr, _i, _len;
+
+    if (location.href !== 'http://atnd.org/events/33746') {
+      return;
+    }
+    if (typeof GM_xmlhttpRequest === "undefined" || GM_xmlhttpRequest === null) {
+      return;
+    }
+    articles.sort(function(a, b) {
+      if (a.hatebu > b.hatebu) {
+        return -1;
       }
-      tagName = child.tagName;
-      if (!(tagName && tagName === 'a' || tagName === 'A')) {
-        continue;
+      if (a.hatebu < b.hatebu) {
+        return 1;
       }
-      anchor = child;
-      break;
+      return 0;
+    });
+    table = document.createElement('table');
+    table.id = 'hatebu-rank';
+    tbody = document.createElement('tbody');
+    rank = 1;
+    for (_i = 0, _len = articles.length; _i < _len; _i++) {
+      article = articles[_i];
+      if (rank > MAX_RANK) {
+        break;
+      }
+      tr = document.createElement('tr');
+      td = document.createElement('td');
+      textContent(td, rank + '位');
+      tr.appendChild(td);
+      td = document.createElement('td');
+      nameTag = document.createElement('span');
+      textContent(nameTag, article.name);
+      td.appendChild(article.atag);
+      td.appendChild(nameTag);
+      td.appendChild(article.hatebuTag);
+      tr.appendChild(td);
+      rank += 1;
+      tbody.appendChild(tr);
     }
-    if (!anchor) {
-      continue;
+    table.appendChild(tbody);
+    h2 = document.createElement('h2');
+    textContent(h2, 'はてなブックマークランキング');
+    pos = document.querySelectorAll('#post-body > h2')[3];
+    pos.parentNode.insertBefore(h2, pos);
+    pos.parentNode.insertBefore(table, pos);
+    return articles = null;
+  };
+
+  findAnchorTag = function(elem) {
+    var child, tagName;
+
+    child = elem.firstChild;
+    if (!child) {
+      return null;
     }
-    url = anchor.href;
-    if (!url) {
-      continue;
+    tagName = child.tagName;
+    if (!(tagName && tagName === 'a' || tagName === 'A')) {
+      return null;
     }
-    img = createHatebu(url);
-    td.appendChild(img);
-  }
+    return child;
+  };
+
+  showHatenaBoookmarks = function() {
+    var anchor, name, ndays, pram, tagName, td, tdNum, title, tr, trTags, url, _i, _len, _results;
+
+    trTags = document.querySelectorAll('#post-body table tr');
+    _results = [];
+    for (_i = 0, _len = trTags.length; _i < _len; _i++) {
+      tr = trTags[_i];
+      anchor = null;
+      tdNum = 0;
+      _results.push((function() {
+        var _j, _len1, _ref, _results1;
+
+        _ref = tr.children;
+        _results1 = [];
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          td = _ref[_j];
+          tagName = td.tagName;
+          if (!(tagName && (tagName === 'td' || tagName === 'TD'))) {
+            continue;
+          }
+          tdNum += 1;
+          if (tdNum === 1) {
+            ndays = parseInt(textContent(td), 10);
+          }
+          if (tdNum === 3) {
+            name = textContent(td);
+          }
+          if (tdNum === 4) {
+            anchor = findAnchorTag(td);
+            if (anchor != null ? anchor.href : void 0) {
+              url = anchor.href;
+              title = textContent(anchor);
+              pram = {
+                ndays: ndays,
+                name: name,
+                title: title,
+                url: url,
+                atag: anchor.cloneNode(true)
+              };
+              _results1.push(showHatebuText(td, pram));
+            } else {
+              _results1.push(void 0);
+            }
+          } else {
+            _results1.push(void 0);
+          }
+        }
+        return _results1;
+      })());
+    }
+    return _results;
+  };
+
+  showHatenaBoookmarks();
 
 }).call(this);
