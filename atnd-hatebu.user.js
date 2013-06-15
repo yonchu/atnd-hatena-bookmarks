@@ -17,6 +17,7 @@
 //   1.0.0 - 2013/06/07 Release
 //   1.0.1 - 2013/06/07 はてブ数取得を新APIに変更
 //   1.1.0 - 2013/06/15 ランキング表示
+//   1.1.1 - 2013/06/15 ATNDのURLにHashが含まれる場合を考慮
 */
 
 
@@ -239,7 +240,7 @@
   showRanking = function(articles) {
     var article, h2, nameTag, pos, rank, table, tbody, td, tr, _i, _len;
 
-    if (location.href !== 'http://atnd.org/events/33746') {
+    if (!location.href.match(/http:\/\/atnd.org\/events\/33746/)) {
       return;
     }
     if (typeof GM_xmlhttpRequest === "undefined" || GM_xmlhttpRequest === null) {
