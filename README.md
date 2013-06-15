@@ -39,7 +39,7 @@ javascript:(function(){var t,e,n,r,a,i,o,d,l,c,u,m,f,h,p,s,y;try{if(top!==self){
 
 詳細は以下のページを参照下さい。
 
-- ブログURL記載予定
+- [Vim Advent Calendar 2012 に"はてブ数"を表示させるグリモンとブックマークレットを作ったよ！ - よんちゅBlog](http://yonchu.hatenablog.com/entry/2013/06/15/234037)
 
 ## License
 
