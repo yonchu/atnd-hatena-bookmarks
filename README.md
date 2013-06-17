@@ -21,10 +21,10 @@ Vim Advent Calendar 以外にも同様のレイアウト使用していれば、
 
 以下のリンクをブックマークに追加して下さい。
 
-- <a href='javascript:(function(){var s=document.createElement("script");s.charset="UTF-8";s.src="https://github.com/yonchu/atnd-hatena-bookmarks/raw/master/atnd-hatebu-min.user.js";document.body.appendChild(s)})();' target="_blank">ATND Hatena Bookmarks (ブックマークレット版)</a>
+- <a href='javascript:(function(){var s=document.createElement("script");s.charset="UTF-8";s.src="//github.com/yonchu/atnd-hatena-bookmarks/raw/master/atnd-hatebu-min.user.js";document.body.appendChild(s)})();' target="_blank">ATND Hatena Bookmarks (ブックマークレット版)</a>
 
 ```javascript
-javascript:(function(){var s=document.createElement("script");s.charset="UTF-8";s.src="https://github.com/yonchu/atnd-hatena-bookmarks/raw/master/atnd-hatebu-min.user.js";document.body.appendChild(s)})();
+javascript:(function(){var s=document.createElement("script");s.charset="UTF-8";s.src="//github.com/yonchu/atnd-hatena-bookmarks/raw/master/atnd-hatebu-min.user.js";document.body.appendChild(s)})();
 ```
 
 スクリプトをサーバから読み込まないバージョンを使用したい場合は、以下のリンクをブックマークに追加して下さい。
