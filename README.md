@@ -1,7 +1,10 @@
 ATND Hatena Bookmarks
 ---------------------
 
-[Vim Advent Calendar 2012](http://atnd.org/events/33746) に はてなブックマーク数 を表示するための Greasemonkey と Bookmarklet です。
+Vimd Advent Calendar に はてなブックマーク数 を表示するための Greasemonkey と Bookmarklet です。
+
+- [Vim Advent Calendar 2012](https://atnd.org/events/33746)
+- [Vim Advent Calendar 2013](https://atnd.org/events/45072)
 
 Vim Advent Calendar 以外にも同様のレイアウト使用していれば、他のATNDイベントでも使用することができます。
 

@@ -6,10 +6,11 @@
 // @namespace      http://yonchu.hatenablog.com/
 // @description    Show Hatena Bookmarks of articles in ATND
 // @license        MIT License (http://opensource.org/licenses/MIT)
-// @version        1.1.0
+// @version        1.1.2
 // @include        http://atnd.org/events/*
+// @include        https://atnd.org/events/*
 // @released       2013-06-07
-// @updated        2013-06-15
+// @updated        2014-08-20
 // @compatible     Greasemonkey
 // ==/UserScript==
 // Version History:
@@ -17,6 +18,7 @@
 //   1.0.1 - 2013/06/07 はてブ数取得を新APIに変更
 //   1.1.0 - 2013/06/15 ランキング表示
 //   1.1.1 - 2013/06/15 ATNDのURLにHashが含まれる場合を考慮
+//   1.1.2 - 2014/08/20 httpsに対応、ランキング表示場所を変更
 ###
 
 
@@ -232,7 +234,9 @@ showHatebuText = (parent, param) ->
 
 # Show hatena bookmark ranking.
 showRanking = (articles) ->
-  unless location.href.match /http:\/\/atnd.org\/events\/33746/
+  match_loc = location.href.match /http[s]:\/\/atnd.org\/events\/(.*)/
+  unless match_loc then return
+  unless match_loc[1] in ['33746', '45072']
     return
   unless GM_xmlhttpRequest?
     return
@@ -263,7 +267,7 @@ showRanking = (articles) ->
   table.appendChild tbody
   h2 = document.createElement 'h2'
   textContent h2, 'はてなブックマークランキング'
-  pos = document.querySelectorAll('#post-body > h2')[3]
+  pos = document.querySelectorAll('#post-body > h2')[0]
   pos.parentNode.insertBefore h2, pos
   pos.parentNode.insertBefore table, pos
   articles = null
